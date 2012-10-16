@@ -1,0 +1,58 @@
+// Microsoft Visual C++ generated resource script.
+//
+#include "afxres.h"
+#include "resource.h"
+
+//Icons
+mfcIcon		ICON	"mfc.ico"
+
+// Menus
+mfcMenu MENU
+BEGIN
+	POPUP "&File"
+	BEGIN
+		MENUITEM "&New\tCtrl+N",	ID_FILE_NEW
+		MENUITEM "&Open...\tCtrl+O",	ID_FILE_OPEN
+		MENUITEM "&Save\tCtrl+S",	ID_FILE_SAVE
+		MENUITEM "&Save As...",		ID_FILE_SAVE
+		MENUITEM SEPARATOR
+		MENUITEM "&Page Setup...",	ID_FILE_PRINT
+		MENUITEM "&Print...\tCtrl+P",	ID_FILE_PRINT
+		MENUITEM SEPARATOR
+		MENUITEM "&Exit\tCtrl+C",	IDM_CLOSE
+	END
+	POPUP "&Edit"
+	BEGIN
+		MENUITEM "Undo\tCtrl+Z",	ID_EDIT_CUT
+		MENUITEM SEPARATOR
+		MENUITEM "Cut\tCtrl+X",		ID_EDIT_CUT
+		MENUITEM "Copy\tCtrl+C",	ID_EDIT_COPY
+		MENUITEM "Paste\tCtrl+V",	ID_EDIT_PASTE
+		MENUITEM "Delete\tDel",		ID_EDIT_PASTE
+
+	END
+	POPUP "&Help"
+	BEGIN
+		MENUITEM "About",		ID_APP_ABOUT
+	END
+END
+
+// ToolBars
+mfcToolBarBitmap BITMAP ToolBar.bmp
+
+mfcToolBar TOOLBAR   16, 15
+BEGIN
+    BUTTON      ID_FILE_NEW
+    BUTTON      ID_FILE_OPEN
+    BUTTON      ID_FILE_SAVE
+	SEPARATOR
+    BUTTON      ID_EDIT_CUT
+    BUTTON      ID_EDIT_COPY
+    BUTTON      ID_EDIT_PASTE
+	SEPARATOR
+    BUTTON      ID_FILE_PRINT
+    BUTTON      ID_APP_ABOUT
+END
+
+// common controls
+//1                       24      DISCARDABLE     "manifest.xml"

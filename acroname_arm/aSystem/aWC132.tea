@@ -1,0 +1,848 @@
+/* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
+/*                                                                 */
+/* file: aWC132.tea                                               */
+/*                                                                 */
+/* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
+/*                                                                 */
+/* description: Routines for interfacing to the Nubotics      	   */
+/*              WheelCommander 132 controller                      */
+/*                                                                 */
+/* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
+/*                                                                 */
+/*        docs: Documentation can be found in the BrainStem        */
+/*              Reference under the major topic "TEA"              */
+/*                                                                 */
+/* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
+/*                                                                 */
+/* Copyright 1994-2010. Acroname Inc.                              */
+/*                                                                 */
+/* This software is the property of Acroname Inc.  Any             */
+/* distribution, sale, transmission, or re-use of this code is     */
+/* strictly forbidden except with permission from Acroname Inc.    */
+/*                                                                 */
+/* To the full extent allowed by law, Acroname Inc. also excludes  */
+/* for itself and its suppliers any liability, wheither based in   */
+/* contract or tort (including negligence), for direct,            */
+/* incidental, consequential, indirect, special, or punitive       */
+/* damages of any kind, or for loss of revenue or profits, loss of */
+/* business, loss of information or data, or other financial loss  */
+/* arising out of or in connection with this software, even if     */
+/* Acroname Inc. has been advised of the possibility of such       */
+/* damages.                                                        */
+/*                                                                 */
+/* Acroname Inc.                                                   */
+/* www.acroname.com                                                */
+/* 720-564-0373                                                    */
+/*                                                                 */
+/* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
+
+#ifndef _aWC132_T_
+#define _aWC132_T_
+
+#include <aIOPorts.tea>
+
+#define aWC_I2C_Address 0x20
+#define aWC_Acceleration 0x41 /* ASCII letter "A" */
+#define aWC_Brake 0x42 /* ASCII letter "B" */
+#define aWC_Coast 0x43 /* ASCII letter "C" */
+#define aWC_Position 0x44 /* ASCII letter "D" */ 
+#define aWC_Go 0x47 /* ASCII letter "G" */
+#define aWC_ResetMotion 0x52 /* ASCII letter "R" */
+#define aWC_Status 0x53 /* ASCII letter "S" */ 
+#define aWC_Velocity 0x56 /* ASCII letter "V" */
+#define aWC_Angle 0x57 /* ASCII letter "W" */ 
+#define aWC_Distance 0x58 /* ASCII letter "X" */ 
+#define aWC_RelAngle 0x5A /* ASCII letter "Z" */ 
+
+#define aWC132_GetDistance_LowBytes aWC132_GetPosition_LowBytes
+#define aWC132_GetDistance_HighBytes aWC132_GetPosition_HighBytes
+
+/* bit 1: velocity control in progress*/
+/* bit 2: position control in progress */
+/* bit 5: motion control active */
+/* bit 6: I2C active */
+#define WC132_ACTIVE 0b000000001100110 
+
+/* ********************************************************
+    Function name: aWC132_Go()
+    Description: This command starts a movement as specified by
+      previously executed "Set Acceleration", "Set Velocity",
+      "Set Rotation Rate", "Set Angle", "Set Position", and / or
+      "Set Distance" commands.
+      
+    Pseudocode:
+      Step 1.) Read the current I2C baudrate and store it.
+      Step 2.) Configure the I2C baudrate to 400kbps
+      Step 3.) Build the I2C packet.
+      Step 4.) Execute the I2C packet.
+      Step 5.) Restore origional I2C setting.
+ */
+
+void aWC132_Go()
+{
+  asm
+  {
+   /* store the current IIC speed to restore later */
+   pushmb aPortIICBaud
+   
+   /* set to 400kHz for the WheelCommander */
+   pushlb 1
+   popbm  aPortIICBaud /* Change I2C baud */
+
+   pushlb aWC_I2C_Address    /* IIC address */
+   pushlb 1                     /* data size */
+   pushlb aWC_Go             /* push reg */
+   pushlb 3                     /* cmd size */
+   popcmd                       /* execute */
+
+   /* restore entry IIC speed */
+   popbm  aPortIICBaud
+
+  } /* End of assembly */
+} /* End of aWC132_Go() function */
+
+/* ********************************************************
+    Function name: aWC132_Coast()
+    Description: This command stops the velocity and position 
+      control loops.
+
+    Pseudocode:
+      Step 1.) Read the current I2C baudrate and store it.
+      Step 2.) Configure the I2C baudrate to 400kbps
+      Step 3.) Build the I2C packet.
+      Step 4.) Execute the I2C packet.
+      Step 5.) Restore origional I2C setting.
+ */
+
+void aWC132_Coast()
+{
+  asm
+  {
+   /* store the current IIC speed to restore later */
+   pushmb aPortIICBaud
+   
+   /* set to 400kHz for the WheelCommander */
+   pushlb 1
+   popbm  aPortIICBaud /* Change I2C baud */
+
+   pushlb aWC_I2C_Address    /* IIC address */
+   pushlb 1                     /* data size */
+   pushlb aWC_Coast          /* push reg */
+   pushlb 3                     /* cmd size */
+   popcmd                       /* execute */
+
+   /* restore entry IIC speed */
+   popbm  aPortIICBaud
+
+  } /* End of assembly */
+} /* End of aWC132_Coast() function */
+
+/* ********************************************************
+    Function name: aWC132_ResetMotion()
+    Description: This command stops any current motion and 
+      clears out any current settings for acceleration, 
+      velocity, rate of rotation, position, and angle.
+      
+    Pseudocode:
+      Step 1.) Read the current I2C baudrate and store it.
+      Step 2.) Configure the I2C baudrate to 400kbps
+      Step 3.) Build the I2C packet.
+      Step 4.) Execute the I2C packet.
+      Step 5.) Restore origional I2C setting.
+ */
+
+void aWC132_ResetMotion()
+{
+  asm
+  {
+   /* store the current IIC speed to restore later */
+   pushmb aPortIICBaud
+   
+   /* set to 400kHz for the WheelCommander */
+   pushlb 1
+   popbm  aPortIICBaud /* Change I2C baud */
+
+   pushlb aWC_I2C_Address    /* IIC address */
+   pushlb 1                     /* data size */
+   pushlb aWC_ResetMotion    /* push reg */
+   pushlb 3                     /* cmd size */
+   popcmd                       /* execute */
+
+   /* restore entry IIC speed */
+   popbm  aPortIICBaud
+
+  } /* End of assembly */
+} /* End of aWC132_ResetMotion() function */
+
+/* ********************************************************
+    Function name: aWC132_Brake()
+    Description: This command stops the velocity and position 
+      control loops.
+
+    Pseudocode:
+      Step 1.) Read the current I2C baudrate and store it.
+      Step 2.) Configure the I2C baudrate to 400kbps
+      Step 3.) Build the I2C packet.
+      Step 4.) Execute the I2C packet.
+      Step 5.) Restore origional I2C setting.
+ */
+
+void aWC132_Brake()
+{
+  asm
+  {
+   /* store the current IIC speed to restore later */
+   pushmb aPortIICBaud
+   
+   /* set to 400kHz for the WheelCommander */
+   pushlb 1
+   popbm  aPortIICBaud /* Change I2C baud */
+
+   pushlb aWC_I2C_Address    /* IIC address */
+   pushlb 1                     /* data size */
+   pushlb aWC_Brake    /* push reg */
+   pushlb 3                     /* cmd size */
+   popcmd                       /* execute */
+
+   /* restore entry IIC speed */
+   popbm  aPortIICBaud
+
+  } /* End of assembly */
+} /* End of aWC132_Brake() function */
+
+/* ********************************************************
+    Function name: aWC132_SetVelocity(int velocity)
+    Description: This command lets you specify a goal velocity
+      for either a simple velocity control motion, or as a 
+      maximum goal velocity for use durign a controlled
+      position or distance motion.
+
+    Pseudocode:
+      Step 1.) Read the current I2C baudrate and store it.
+      Step 2.) Configure the I2C baudrate to 400kbps
+      Step 3.) Build the I2C packet.
+      Step 4.) Execute the I2C packet.
+      Step 5.) Restore origional I2C setting.
+ */
+
+void aWC132_SetVelocity(int velocity)
+{
+  asm
+  {
+   /* store the current IIC speed to restore later */
+   pushmb aPortIICBaud
+   
+   /* set to 400kHz for the WheelCommander */
+   pushlb 1
+   popbm  aPortIICBaud /* Change I2C baud */
+
+   pushlb aWC_I2C_Address    /* IIC address */
+   pushlb 3                     /* data size */
+   pushlb aWC_Velocity       /* push reg */
+   pushsb 6                     /* velocity low byte */
+   pushsb 8                     /* velocity high byte */
+   pushlb 5                     /* cmd size */
+   popcmd                       /* execute */
+
+   /* restore entry IIC speed */
+   popbm  aPortIICBaud
+
+  } /* End of assembly */
+} /* End of aWC132_SetVelocity() function */
+
+/* ********************************************************
+    Function name: aWC132_SetAcceleration(int acceleration)
+    Description: This command lets you set the maximum rate
+      rate of change of velocity during a position, distance
+      and / or angle command.  
+
+    Pseudocode:
+      Step 1.) Read the current I2C baudrate and store it.
+      Step 2.) Configure the I2C baudrate to 400kbps
+      Step 3.) Build the I2C packet.
+      Step 4.) Execute the I2C packet.
+      Step 5.) Restore origional I2C setting.
+ */
+
+void aWC132_SetAcceleration(int acceleration)
+{
+  asm
+  {
+   /* store the current IIC speed to restore later */
+   pushmb aPortIICBaud
+   
+   /* set to 400kHz for the WheelCommander */
+   pushlb 1
+   popbm  aPortIICBaud /* Change I2C baud */
+
+   pushlb aWC_I2C_Address    /* IIC address */
+   pushlb 3                     /* data size */
+   pushlb aWC_Acceleration   /* push reg */
+   pushsb 6                     /* acceleration low byte */
+   pushsb 8                     /* acceleration high byte */
+   pushlb 5                     /* cmd size */
+   popcmd                       /* execute */
+
+   /* restore entry IIC speed */
+   popbm  aPortIICBaud
+
+  } /* End of assembly */
+} /* End of aWC132_SetAcceleration(int) function */
+
+/* ********************************************************
+    Function name: aWC132_SetRelAngle(int angle)
+    Description: This command sets a goal angle, in degrees,
+      through which the robot should be rotated in a controlled
+      manner. 
+
+    Pseudocode:
+      Step 1.) Read the current I2C baudrate and store it.
+      Step 2.) Configure the I2C baudrate to 400kbps
+      Step 3.) Build the I2C packet.
+      Step 4.) Execute the I2C packet.
+      Step 5.) Restore origional I2C setting.
+ */
+
+void aWC132_SetRelAngle(int angle)
+{
+  asm
+  {
+   /* store the current IIC speed to restore later */
+   pushmb aPortIICBaud
+   
+   /* set to 400kHz for the WheelCommander */
+   pushlb 1
+   popbm  aPortIICBaud /* Change I2C baud */
+
+   pushlb aWC_I2C_Address    /* IIC address */
+   pushlb 3                     /* data size */
+   pushlb aWC_RelAngle       /* push reg */
+   pushsb 6                     /* rel ang low byte */
+   pushsb 8                     /* rel ang high byte */
+   pushlb 5                     /* cmd size */
+   popcmd                       /* execute */
+
+   /* restore entry IIC speed */
+   popbm  aPortIICBaud
+
+  } /* End of assembly */
+} /* End of aWC132_SetRelAngle(int) function */
+
+/* ********************************************************
+    Function name: aWC132_SetAngle(int angle)
+    Description: This command sets a goal angle, in degrees, 
+      through which the robot platform should be rotated in 
+      a controlled manner. 
+
+    Pseudocode:
+      Step 1.) Read the current I2C baudrate and store it.
+      Step 2.) Configure the I2C baudrate to 400kbps
+      Step 3.) Build the I2C packet.
+      Step 4.) Execute the I2C packet.
+      Step 5.) Restore origional I2C setting.
+ */
+
+void aWC132_SetAngle(int angle)
+{
+  asm
+  {
+   /* store the current IIC speed to restore later */
+   pushmb aPortIICBaud
+   
+   /* set to 400kHz for the WheelCommander */
+   pushlb 1
+   popbm  aPortIICBaud /* Change I2C baud */
+
+   pushlb aWC_I2C_Address    /* IIC address */
+   pushlb 3                     /* data size */
+   pushlb aWC_Angle          /* push reg */
+   pushss 7                     /* input data */
+   pushlb 5                     /* cmd size */
+   popcmd                       /* execute */
+
+   /* restore entry IIC speed */
+   popbm  aPortIICBaud
+
+  } /* End of assembly */
+} /* End of aWC132_SetAngle(int) function */
+
+/* ********************************************************
+    Function name: aWC132_GetAngle()
+    Description: This command returns the current angle, in 
+      degrees, that the robot has rotated relative to the 
+      origin, which is assumed to be 0 and angle 0, either
+      the last time the robot was powered on or the last time
+      the reset motion command was executed. 
+
+    Pseudocode:
+      Step 1.) Read the current I2C baudrate and store it.
+      Step 2.) Configure the I2C baudrate to 400kbps
+      Step 3.) Set the register pointer to desired location
+      Step 4.) Build the I2C packet.
+      Step 5.) Execute the I2C packet.
+      Step 6.) Restore origional I2C setting.
+      Step 7.) Return the value.
+ */
+
+int aWC132_GetAngle()
+{
+  int val = 0;
+  asm
+  {
+   /* store the current IIC speed to restore later */
+   pushmb aPortIICBaud
+   
+   /* set to 400kHz for the WheelCommander */
+   pushlb 1
+   popbm  aPortIICBaud /* Change I2C baud */
+
+   /* Set the I2C register pointer to appropriate location */
+   pushlb aWC_I2C_Address    /* IIC address */
+   pushlb 1                     /* data size */
+   pushlb aWC_Angle          /* push reg */
+   pushlb 3                     /* cmd size */
+   popcmd                       /* execute */
+
+   /* read the value from the device */
+   pushlb aWC_I2C_Address    /* IIC address */
+   pushlb 1                     /* Add one for read */
+   addb
+   pushlb 3                     /* bytes to read */
+   popsm  aPortIICRead
+
+   /* store into val */
+   popbs 5
+   popbs 3
+   popn 1                       /* Get rid of register addr */
+
+   /* restore entry IIC speed */
+   popbm  aPortIICBaud
+
+  } /* End of assembly */
+
+  return val;
+
+} /* End of aWC132_GetAngle() function */
+
+/* ********************************************************
+    Function name: aWC132_GetStatus()
+    Description: This command lets you determine the current
+      operating mode of the WheelCommander.
+
+    Pseudocode:
+      Step 1.) Read the current I2C baudrate and store it.
+      Step 2.) Configure the I2C baudrate to 400kbps
+      Step 3.) Set the register pointer to desired location
+      Step 4.) Build the I2C packet.
+      Step 5.) Execute the I2C packet.
+      Step 6.) Restore origional I2C setting.
+      Step 7.) Return the value.
+ */
+
+int aWC132_GetStatus()
+{
+  int val = 0;
+  asm
+  {
+   /* store the current IIC speed to restore later */
+   pushmb aPortIICBaud
+   
+   /* set to 400kHz for the WheelCommander */
+   pushlb 1
+   popbm  aPortIICBaud /* Change I2C baud */
+
+   /* Set the I2C register pointer to appropriate location */
+   pushlb aWC_I2C_Address    /* IIC address */
+   pushlb 1                     /* data size */
+   pushlb aWC_Status         /* push reg */
+   pushlb 3                     /* cmd size */
+   popcmd                       /* execute */
+
+   /* read the value from the device */
+   pushlb aWC_I2C_Address    /* IIC address */
+   pushlb 1                     /* Add one for read */
+   addb
+   pushlb 3	                /* bytes to read */
+   popsm  aPortIICRead
+
+   /* store into val */
+   popbs 5
+   popbs 3
+   popn 1                       /* Get rid of register addr */
+
+   /* restore entry IIC speed */
+   popbm  aPortIICBaud
+
+  } /* End of assembly */
+
+  return val;
+} /* End of aWC132_GetStatus() function */
+
+
+/* ********************************************************
+    Function name: aWC132_IsActive()
+ */
+char aWC132_IsActive()
+{
+  int result = 0;
+	// Check to see if we are still in progress by looking
+	// at the status bit definitions
+  result = aWC132_GetStatus() & WC132_ACTIVE;
+
+  if (result == WC132_ACTIVE)
+    result = 1;
+  else
+    result = 0;
+    
+  return (char) result;
+}
+
+/* ********************************************************
+    Function name: aWC132_GetVelocity()
+    Description: This command 
+
+    Pseudocode:
+      Step 1.) Read the current I2C baudrate and store it.
+      Step 2.) Configure the I2C baudrate to 400kbps
+      Step 3.) Set the register pointer to desired location
+      Step 4.) Build the I2C packet.
+      Step 5.) Execute the I2C packet.
+      Step 6.) Restore origional I2C setting.
+      Step 7.) Return the value.
+ */
+
+int aWC132_GetVelocity()
+{
+  int val = 0;
+  asm
+  {
+   /* store the current IIC speed to restore later */
+   pushmb aPortIICBaud
+   
+   /* set to 400kHz for the WheelCommander */
+   pushlb 1
+   popbm  aPortIICBaud /* Change I2C baud */
+
+   /* Set the I2C register pointer to appropriate location */
+   pushlb aWC_I2C_Address    /* IIC address */
+   pushlb 1                     /* data size */
+   pushlb aWC_Velocity       /* push reg */
+   pushlb 3                     /* cmd size */
+   popcmd                       /* execute */
+
+   /* read the value from the device */
+   pushlb aWC_I2C_Address    /* IIC address */
+   pushlb 1                     /* Add one for read */
+   orb
+   pushlb 3                     /* bytes to read */
+   popsm  aPortIICRead
+
+   /* store into val */
+   popbs 5
+   popbs 3
+   popn 1                       /* Get rid of register addr */
+
+   /* restore entry IIC speed */
+   popbm  aPortIICBaud
+
+  } /* End of assembly */
+
+  return val;
+
+} /* End of aWC132_GetVelocity() function */
+
+/* ********************************************************
+    Function name: aWC132_GetAcceleration()
+    Description: This command returns the actual value used by
+      the firmware based on the value set in a previous 
+      Set Acceleration command.
+
+    Pseudocode:
+      Step 1.) Read the current I2C baudrate and store it.
+      Step 2.) Configure the I2C baudrate to 400kbps
+      Step 3.) Set the register pointer to desired location
+      Step 4.) Build the I2C packet.
+      Step 5.) Execute the I2C packet.
+      Step 6.) Restore origional I2C setting.
+      Step 7.) Return the value.
+ */
+
+int aWC132_GetAcceleration()
+{
+  int val = 0;
+  asm
+  {
+   /* store the current IIC speed to restore later */
+   pushmb aPortIICBaud
+   
+   /* set to 400kHz for the WheelCommander */
+   pushlb 1
+   popbm  aPortIICBaud /* Change I2C baud */
+
+   /* Set the I2C register pointer to appropriate location */
+   pushlb aWC_I2C_Address    /* IIC address */
+   pushlb 1                     /* data size */
+   pushlb aWC_Acceleration   /* push reg */
+   pushlb 3                     /* cmd size */
+   popcmd                       /* execute */
+
+   /* read the value from the device */
+   pushlb aWC_I2C_Address    /* IIC address */
+   pushlb 1                     /* Add one for read */
+   addb
+   pushlb 3                     /* bytes to read */
+   popsm  aPortIICRead
+
+   /* store into val */
+   popbs 5
+   popbs 3
+   popn 1                       /* Get rid of register addr */
+
+   /* restore entry IIC speed */
+   popbm  aPortIICBaud
+
+  } /* End of assembly */
+
+  return val;
+
+} /* End of aWC132_GetAcceleration() function */
+
+/* ********************************************************
+    Function name: aWC132_GetPosition_HighBytes()
+    Description: This command returns the two high bit values 
+      of the 32 bit word that represents the current absolute
+      measured position. This is relative to the robot's frame
+      of reference, relative to the origin and in units
+      of measurement as defined in the Set Position command. 
+
+    Pseudocode:
+      Step 1.) Read the current I2C baudrate and store it.
+      Step 2.) Configure the I2C baudrate to 400kbps
+      Step 3.) Set the register pointer to desired location
+      Step 4.) Build the I2C packet.
+      Step 5.) Execute the I2C packet.
+      Step 6.) Restore origional I2C setting.
+      Step 7.) Return the value.
+ */
+
+int aWC132_GetPosition_HighBytes()
+{
+  int val = 0;
+  asm
+  {
+   /* store the current IIC speed to restore later */
+   pushmb aPortIICBaud
+   
+   /* set to 400kHz for the WheelCommander */
+   pushlb 1
+   popbm  aPortIICBaud /* Change I2C baud */
+
+   /* Set the I2C register pointer to appropriate location */
+   pushlb aWC_I2C_Address    /* IIC address */
+   pushlb 1                     /* data size */
+   pushlb aWC_Position       /* push reg */
+   pushlb 3                     /* cmd size */
+   popcmd                       /* execute */
+
+   /* read the value from the device */
+   pushlb aWC_I2C_Address    /* IIC address */
+   pushlb 1                     /* Add one for read */
+   addb
+   pushlb 5                     /* bytes to read */
+   popsm  aPortIICRead
+
+   /* store into val */
+   popbs 7
+   popbs 5
+   popn 2                       /* Loose the bottom 2 bytes */
+   popn 1                       /* Get rid of register addr */
+
+   /* restore entry IIC speed */
+   popbm  aPortIICBaud
+
+  } /* End of assembly */
+
+  return val;
+
+} /* End of aWC132_GetPosition_HighBytes() function */
+
+/* ********************************************************
+    Function name: aWC132_GetPosition_LowBytes()
+    Description: This command returns the two low bit values 
+      of the 32 bit word that represents the current absolute
+      measured position. This is relative to the robot's frame
+      of reference, relative to the origin and in units
+      of measurement as defined in the Set Position command. 
+
+    Pseudocode:
+      Step 1.) Read the current I2C baudrate and store it.
+      Step 2.) Configure the I2C baudrate to 400kbps
+      Step 3.) Set the register pointer to desired location
+      Step 4.) Build the I2C packet.
+      Step 5.) Execute the I2C packet.
+      Step 6.) Restore origional I2C setting.
+      Step 7.) Return the value.
+ */
+
+int aWC132_GetPosition_LowBytes()
+{
+  int val = 0;
+  asm
+  {
+   /* store the current IIC speed to restore later */
+   pushmb aPortIICBaud
+   
+   /* set to 400kHz for the WheelCommander */
+   pushlb 1
+   popbm  aPortIICBaud /* Change I2C baud */
+
+   /* Set the I2C register pointer to appropriate location */
+   pushlb aWC_I2C_Address    /* IIC address */
+   pushlb 1                     /* data size */
+   pushlb aWC_Position       /* push reg */
+   pushlb 3                     /* cmd size */
+   popcmd                       /* execute */
+
+   /* read the value from the device */
+   pushlb aWC_I2C_Address    /* IIC address */
+   pushlb 1                     /* Add one for read */
+   addb
+   pushlb 5                     /* bytes to read */
+   popsm  aPortIICRead
+
+   /* store into val */
+   popn 2                       /* Loose the top 2 bytes */
+   popbs 5
+   popbs 3
+   popn 1                       /* Get rid of register addr */
+
+   /* restore entry IIC speed */
+   popbm  aPortIICBaud
+
+  } /* End of assembly */
+
+  return val;
+
+} /* End of aWC132_GetPosition_LowBytes() function */
+
+/* ********************************************************
+    Function name: aWC132_SetPosition(int highbyte, int lowbyte)
+    Description: This command lets you set the absolute goal 
+      position, in terms of distance units
+
+    Pseudocode:
+      Step 1.) Read the current I2C baudrate and store it.
+      Step 2.) Configure the I2C baudrate to 400kbps
+      Step 3.) Build the I2C packet.
+      Step 4.) Execute the I2C packet.
+      Step 5.) Restore origional I2C setting.
+ */
+
+void aWC132_SetPosition(int highbyte, int lowbyte)
+{
+  asm
+  {
+   /* store the current IIC speed to restore later */
+   pushmb aPortIICBaud
+   
+   /* set to 400kHz for the WheelCommander */
+   pushlb 1
+   popbm  aPortIICBaud /* Change I2C baud */
+
+   pushlb aWC_I2C_Address    /* IIC address */
+   pushlb 5                     /* data size */
+   pushlb aWC_Position       /* push reg */
+   pushss 7                     /* input data */
+   pushss 11                    /* input data */
+   pushlb 7                     /* cmd size */
+   popcmd                       /* execute */
+
+   /* restore entry IIC speed */
+   popbm  aPortIICBaud
+
+  } /* End of assembly */
+} /* End of aWC132_SetPosition(int, int) function */
+
+
+
+
+/* ********************************************************
+    Function name: aWC132_SetDistance(int highbyte, int lowbyte)
+    Description: This command lets you set the relative goal 
+      position based on the current position. 
+
+    Pseudocode:
+      Step 1.) Read the current I2C baudrate and store it.
+      Step 2.) Configure the I2C baudrate to 400kbps
+      Step 3.) Build the I2C packet.
+      Step 4.) Execute the I2C packet.
+      Step 5.) Restore origional I2C setting.
+ */
+
+void aWC132_SetDistance(int highbyte, int lowbyte)
+{
+  asm
+  {
+   /* store the current IIC speed to restore later */
+   pushmb aPortIICBaud
+   
+   /* set to 400kHz for the WheelCommander */
+   pushlb 1
+   popbm  aPortIICBaud /* Change I2C baud */
+
+   pushlb aWC_I2C_Address    /* IIC address */
+   pushlb 5                     /* data size */
+   pushlb aWC_Distance       /* push reg */
+   pushss 7                     /* input data */
+   pushss 11                    /* input data */
+   pushlb 7                     /* cmd size */
+   popcmd                       /* execute */
+
+   /* restore entry IIC speed */
+   popbm  aPortIICBaud
+
+  } /* End of assembly */
+} /* End of aWC132_SetDistance(int, int) function */
+
+/* ********************************************************
+    Function name: aWC132_DebugStatus()
+*/
+
+void aWC132_Debug_Status(int status)
+{
+	int i = 0;
+	unsigned int check = 0;
+
+	for (i = 0; i < 7; i++)
+	{
+		switch (status & (1<<i)) 
+		{
+			case 1:
+				aPrint_String("vel ctrl prgess\n");
+				break;
+			case 2:
+				aPrint_String("postion ctrl prgess\n");
+				break;
+			case 16:
+				aPrint_String("motion goal reached\n");
+				break;
+			case 32:
+				aPrint_String("motion ctrl active\n");
+				break;
+			case 64:
+				aPrint_String("i2c active\n");
+				break;
+			case 128:
+				aPrint_String("motors enabled\n");
+				break;
+			default:
+				aCore_Sleep(250);
+				break;
+		} // End switch statement
+
+		aCore_Sleep(1000);
+	}
+}
+
+
+#endif /* _aWC132_T_ */

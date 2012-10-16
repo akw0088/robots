@@ -1,0 +1,33 @@
+/* aI2CA2D.tea                     */
+
+/* included for the display routines           */
+#include <aCore.tea>
+
+int aI2CA2D_ReadInt(char addr, char reg)
+{
+  int val=0;
+  asm
+  {
+   /* write address */
+   pushsb	6    /* IIC address       */
+   pushlb	1    /* data size         */
+   pushsb	7    /* push reg         */
+   pushlb       4    /* Internal REF off */
+   orb
+   pushlb	3    /* cmd size          */
+   popcmd
+
+   /* read byte from device  */
+   pushsb	6    /* IIC address       */
+   pushlb	1    /* set read bit      */
+   orb
+   pushlb	2    /* bytes to read     */
+   popsm	aPortIICRead
+   
+   /* store into val */
+   popbs 2
+   popbs 2
+  }
+  return val;
+} // End of aA2DI2C function
+
